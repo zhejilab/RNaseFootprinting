@@ -1,5 +1,5 @@
 """
-Snakemake pipeline for processing ribosome profiling data.
+Snakemake pipeline for processing RNase footprinting data.
 
 This script allows the user to process raw sequencing reads in the FASTQ format into gene counts for ribosome footprinting data. By using snakemake, the results of this analysis are highly reproducible, easily regenerated if needed, and make the analysis of large numbers of samples very straightforward.
 
@@ -13,7 +13,7 @@ Required packages:
 - samtools/1.6
 - htseq
 - R/3.6.3
-- RibORF.1.0
+- RibORF.1.0 (https://github.com/zhejilab/RibORF)
 
 Required python packages:
 - snakemake
@@ -156,7 +156,7 @@ rule riborf_annotate:
 
 
 rule riborf_readdist:
-	"""Quality control analyses and plot the distribution of reads surrounding the start and stop codons by read length, second step of RibORF analysis.
+	"""Quality control analyses and plot the distribution of reads surrounding the start and stop codons by read length, second step of RibORF analysis. The high quality data should show strong read enrichment in coding regions compared to 3'UTRs. The codng regions reads are enriched with these with lengths of ~21nt and ~29nt with 3-nt periodicity. 
 	"""
 	input:
 		bam = "{species}/{sample}-{platform}/align_transcriptome_tophat/accepted_hits.bam",
