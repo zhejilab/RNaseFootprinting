@@ -1,0 +1,128 @@
+"""
+Snakemake pipeline for processing ribosome profiling data.
+
+This script allows the user to process raw sequencing reads in the FASTQ format into gene counts for ribosome footprinting data. By using snakemake, the results of this analysis are highly reproducible, easily regenerated if needed, and make the analysis of large numbers of samples very straightforward.
+
+For this script to work as written, it is required that the samples be organized into directories following the pattern "<SPECIES>/<SAMPLENAME>-rfp/" and with the input read file named "r.1.fastq.gz". The reference and annotation files must also be in a directory called "<SPECIES>/annotation/" 
+
+Required packages:
+- python/anaconda
+- snakemake
+- bowtie2/2.2.6
+- tophat/2.1.0
+- deeptools/3.1.1
+- samtools/1.6
+- htseq
+
+Required reference files:
+- bowtie2 rRNA alignment reference = "<SPECIES>/annotation/rRNA_bowtie2/rRNA"
+- bowtie2 genomic alignment referece = "<SPECIES>/annotation/genome_bowtie2/genome"
+- tophat transcriptome reference = "<SPECIES>/annotation/transcriptome_gtf/known"
+
+
+
+After loading an Anaconda distribution of python and installing the snakemake package, this script can be run locally or be used to launch slurm jobs using the following commands. If the script is used to launch slurm jobs, a file called "cluster_config.yml" is required to specify parameters required to launch the jobs, such as the account, partition, time, etc.
+
+Command line usage:
+snakemake -s Snakefile-rfp <SPECIES>/<SAMPLENAME>-rfp/align_transcriptome_tophat/unique_hits.counts.txt
+
+Cluster usage:
+snakemake -s Snakefile-rfp --cluster "sbatch -A {cluster.account} -p {cluster.partition} -t {cluster.time} -N {cluster.nodes} -n {cluster.ntasks} --mem-per-cpu={cluster.mem}" --cluster-config cluster_config.yml --jobs 1 <SPECIES>/<SAMPLENAME>-rfp/align_transcriptome_tophat/unique_hits.counts.txt
+
+"""
+
+
+
+rule trimming:
+	input:
+		reads = "{species}/{sample}-{platform}/r.1.fastq.gz",
+	output:
+		fastq = "{species}/{sample}-{platform}/r.1.trimmed.fastq.gz",
+	log:
+		"{species}/{sample}-{platform}/logs/cutadapt.log",
+	shell:
+		"cutadapt -a AAAAAAAA -e 0.13 -u 7 -m 18 -M 35 -o {output.fastq} {input.reads} > {log}"
+
+
+
+rule align_rRNA_bowtie:
+	input:
+		reads = "{species}/{sample}-{platform}/r.1.trimmed.fastq.gz",
+	output:
+		outdir = "{species}/{sample}-{platform}/align_rRNA_bowtie/",
+		reads = "{species}/{sample}-{platform}/align_rRNA_bowtie/unmapped.fastq",
+		sam = "{species}/{sample}-{platform}/align_rRNA_bowtie/accepted_hits.sam",
+		log = "{species}/{sample}-{platform}/logs/align_rRNA_bowtie.log",
+	params:
+		refdir = "{species}/annotation/rRNA_bowtie2/rRNA",
+	threads:
+		8
+	shell:
+		"module load bowtie2/2.2.6; "
+		"bowtie2 "
+		"-p 8 "
+		"-x {params.refdir} "
+		"-U {input.reads} "
+		"--un {output.reads} "
+		"-S {output.sam} 2> {output.log} "
+
+
+
+rule align_transcriptome_tophat:
+	input:
+		reads = "{species}/{sample}-{platform}/align_rRNA_bowtie/unmapped.fastq",
+	output:
+		outdir = "{species}/{sample}-{platform}/align_transcriptome_tophat/",
+		reads = "{species}/{sample}-{platform}/align_transcriptome_tophat/accepted_hits.bam"
+	log:
+		"{species}/{sample}-{platform}/logs/align_transcriptome_tophat.log",
+	params:
+		refdir = "{species}/annotation/genome_bowtie2/genome",
+		gtfdir = "{species}/annotation/transcriptome_gtf/known",
+	shell:
+		"module load python/anaconda; module load bowtie2/2.2.6; module load tophat/2.1.0; "
+		"tophat "
+		"-p 8 "
+		"--transcriptome-index={params.gtfdir} "
+		"-o {output.outdir} "
+		"{params.refdir} "
+		"{input.reads} &> {log} "
+
+
+
+rule tracks_transcriptome_tophat:
+	input:
+		bam = "{species}/{sample}-{platform}/align_transcriptome_tophat/accepted_hits.bam",
+	output:
+		unique_sam = "{species}/{sample}-{platform}/align_transcriptome_tophat/unique_hits.sam",
+		unique_bam = "{species}/{sample}-{platform}/align_transcriptome_tophat/unique_hits.bam",
+		bw1 = "{species}/{sample}-{platform}/align_transcriptome_tophat/unique_hits.str1.bw",
+		bw2 = "{species}/{sample}-{platform}/align_transcriptome_tophat/unique_hits.str2.bw",
+	shell:
+		"module purge all; module load deeptools/3.1.1; module load samtools/1.6; "
+		"samtools view -H {input.bam} > {output.unique_sam}; "
+		"samtools view {input.bam} | grep \"NH:i:1\" >> {output.unique_sam}; "
+		"samtools view -S -b {output.unique_sam} | samtools sort -o {output.unique_bam}; "
+		"samtools index {output.unique_bam}; "
+		"bamCoverage -p 8 -b {output.unique_bam} -o {output.bw1} --filterRNAstrand reverse --normalizeUsing CPM --binSize 1; "
+		"bamCoverage -p 8 -b {output.unique_bam} -o {output.bw2} --filterRNAstrand forward --normalizeUsing CPM --binSize 1; "
+
+
+
+rule counts_transcriptome:
+	input:
+		bam = "{species}/{sample}-{platform}/align_transcriptome_tophat/unique_hits.bam",
+		gff = "{species}/annotation/transcriptome_gtf/known.gff",
+	output:
+		counts = "{species}/{sample}-{platform}/align_transcriptome_tophat/unique_hits.counts.txt",
+	params:
+		stranded = "yes",
+		type = "CDS",
+		mode = "union",
+	shell:
+		"htseq-count "
+		"-f bam "
+		"-s {params.stranded} "
+		"-t {params.type} "
+		"-m {params.mode} "
+		"{input.bam} {input.gff} > {output.counts} "
