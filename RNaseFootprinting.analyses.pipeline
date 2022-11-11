@@ -110,7 +110,7 @@ rule tracks_transcriptome_tophat:
 	shell:
 		"module purge all; module load deeptools/3.1.1; module load samtools/1.6; "
 		"samtools view -H {input.bam} > {output.unique_sam}; "
-		"samtools view {input.bam} | grep \"NH:i:1\" >> {output.unique_sam}; "
+		"samtools view {input.bam} | grep -w \"NH:i:1\" >> {output.unique_sam}; "
 		"samtools view -S -b {output.unique_sam} | samtools sort -o {output.unique_bam}; "
 		"samtools index {output.unique_bam}; "
 		"bamCoverage -p {params.threads} -b {output.unique_bam} -o {output.bw1} --filterRNAstrand reverse --normalizeUsing CPM --binSize 1; "
@@ -129,12 +129,14 @@ rule counts_transcriptome:
 		stranded = "yes",
 		type = "CDS",
 		mode = "union",
+		uniq = "all",
 	shell:
 		"htseq-count "
 		"-f bam "
 		"-s {params.stranded} "
 		"-t {params.type} "
 		"-m {params.mode} "
+		"--nonunique {params.uniq}"
 		"{input.bam} {input.gff} > {output.counts} "
 
 
