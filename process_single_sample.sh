@@ -5,7 +5,7 @@
 SAMPLE="SRR11950060"
 
 
-## Step 1: download reference files
+## Step 1: Download reference files
 
 mkdir ./annotation
 
@@ -23,7 +23,7 @@ cut refFlat.txt -f2-11 > ./annotation/refseq.genePred
 rm refFlat.txt
 
 
-## Step 2: make indices for Bowtie2 and TopHat
+## Step 2: Make alignment indices for Bowtie2 and TopHat
 
 module purge all
 module load bowtie2/2.2.6
@@ -42,7 +42,7 @@ tophat -G ./annotation/gencode.v42.gtf --transcriptome-index=./annotation/transc
 mv ./annotation/gencode.v42.gtf ./annotation/transcriptome/known.gtf
 
 
-## Step 3: download FASTQ file from Gene Expression Omnibus repository
+## Step 3: Download FASTQ file from NIH Gene Expression Omnibus repository
 
 mkdir ./data
 module purge all
@@ -53,14 +53,14 @@ gzip ./data/${SAMPLE}_1.fastq
 gzip ./data/${SAMPLE}_2.fastq
 
 
-## Step 4: trim adapters from input reads
+## Step 4: Trim read adapters
 
-cutadapt -a AAAAAAAAAA -e 0.1 -u 7 -m 18 -M 35 \
+cutadapt -a AAAAAAAA -e 0.2 -u 7 -m 18 -M 35 \
  -o ./data/${SAMPLE}_1.trimmed.fastq.gz \
  ./data/${SAMPLE}_1.fastq.gz > ./logs/${SAMPLE}_cutadapt.log
 
 
-## Step 5: align trimmed reads to rRNA reference sequences using Bowtie2
+## Step 5: Align trimmed reads to rRNA
 
 mkdir ./align_rRNA
 module purge all
@@ -73,7 +73,7 @@ bowtie2 -p 8 \
  -S ./align_rRNA/accepted_hits.sam 2> ./logs/${SAMPLE}_align_rRNA.log
 
 
-## Step 6: align rRNA-unmapped reads to the transcriptome using TopHat
+## Step 6: Align rRNA-unmapped reads to the transcriptome then genome
 
 mkdir ./align_transcriptome
 module purge all
@@ -81,14 +81,14 @@ module load python/anaconda
 module load bowtie2/2.2.6
 module load tophat/2.1.0
 
-tophat -p 8 --keep-tmp \
+tophat -p 8 \
  --transcriptome-index=./annotation/transcriptome/known \
  -o ./align_transcriptome/ \
  ./annotation/genome/genome \
  ./align_rRNA/unmapped.fastq &> ./logs/${SAMPLE}_align_transcriptome.log
 
 
-## Step 7: create BigWig tracks showing the genome coverage of uniquely-mapped reads 
+## Step 7: Extract uniquely mapped reads and quality check results
 
 module purge all
 module load deeptools/3.1.1
@@ -102,25 +102,7 @@ bamCoverage -p 8 -b ./align_transcriptome/unique_hits.bam -o ./align_transcripto
 bamCoverage -p 8 -b ./align_transcriptome/unique_hits.bam -o ./align_transcriptome/unique_hits.str2.bw --filterRNAstrand forward --normalizeUsing CPM --binSize 1
 
 
-## Step 8: quantify uniquely-mapped reads in known transcripts using HT-Seq
-
-htseq-count \
- --format="bam" \
- --stranded="yes" \
- --type="CDS" \
- --mode="union" \
- --nonunique="all" \
- ./align_transcriptome/unique_hits.bam \
- ./annotation/transcriptome/known.gff > ./align_transcriptome/unique_hits.counts.txt
-
-
-## Step 9: annotate the reference genome annotation and primary assembly to identify candidate ORFs
-
-mkdir -p ./riborf/annotate
-perl ./software/RibORF.2.0/ORFannotate.pl -g ./annotation/genome/genome.fa -t ./annotation/refseq.genePred -o ./riborf/annotate
-
-
-## Step 10: quality control analyses to plot the distribution of reads surrounding the start and stop codons by read length
+## Step 8: Data quality control using RibORF
 
 mkdir -p ./riborf/readdist
 module purge all
@@ -132,10 +114,22 @@ perl ./software/RibORF.2.0/readDist.pl \
  -o ./riborf/readdist \
  -d 18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,
 
-Rscript --vanilla software/RibORF.2.0/combine_plots.R ./riborf/readdist 18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,
+Rscript --vanilla ./software/RibORF.2.0/combine_plots.R ./riborf/readdist 18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,
 
 
-## Step 11: correct the location of reads to ribosomal A-sites based on their read length and the provided offset parameter file that needs to be manually curated
+## Step 9: Quantify ribosome occupancy in protein-coding regions
+
+htseq-count \
+ --format="bam" \
+ --stranded="yes" \
+ --type="CDS" \
+ --mode="union" \
+ --nonunique="all" \
+ ./align_transcriptome/unique_hits.bam \
+ ./annotation/transcriptome/known.gff > ./align_transcriptome/unique_hits.counts.txt
+
+
+## Step 10: Read distribution features separating ribosomal vs. non-ribosomal fragments
 
 mkdir -p ./riborf/corrected
 module purge all
