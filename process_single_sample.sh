@@ -124,13 +124,10 @@ perl ./software/RibORF.2.0/ORFannotate.pl -g ./annotation/genome/genome.fa -t ./
 
 mkdir -p ./riborf/readdist
 module purge all
-module load samtools/1.6
 module load R/3.6.3
 
-samtools view -h -o ./align_transcriptome/accepted_hits.sam ./align_transcriptome/accepted_hits.bam
-
 perl ./software/RibORF.2.0/readDist.pl \
- -f ./align_transcriptome/accepted_hits.sam \
+ -f ./align_transcriptome/unique_hits.sam \
  -g ./annotation/refseq.genePred \
  -o ./riborf/readdist \
  -d 18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,
@@ -142,10 +139,11 @@ Rscript --vanilla software/RibORF.2.0/combine_plots.R ./riborf/readdist 18,19,20
 
 mkdir -p ./riborf/corrected
 module purge all
+module load samtools/1.6
 module load R/3.6.3
 
 perl ./software/RibORF.2.0/offsetCorrect.pl \
- -r ./align_transcriptome/accepted_hits.sam \
+ -r ./align_transcriptome/unique_hits.sam \
  -p ./riborf/offset.correction.parameters.txt \
  -o ./riborf/corrected/corrected_hits.sam
 
@@ -157,19 +155,9 @@ perl ./software/RibORF.2.0/readDist.pl \
 
 Rscript --vanilla ./software/RibORF.2.0/combine_plots.R ./riborf/corrected 1
 
-
-## Step 12: identify translated ORFs using the corrected ribosome profiling reads and the candidate ORF file from earlier steps
-
-mkdir -p ./riborf/riborf
-module purge all
-module load R/3.6.3
-
-perl ./software/RibORF.2.0/ribORF.pl \
- -f ./riborf/corrected/corrected_hits.sam \
- -c ./riborf/annotate/candidateORF.genepred.txt \
- -o ./riborf/riborf \
- -l 6 \
- -r 11 \
- -p 0.7
+samtools view -S -b ./riborf/corrected/corrected_hits.sam | samtools sort -o ./riborf/corrected/corrected_hits.bam
+samtools index ./riborf/corrected/corrected_hits.bam
+bamCoverage -p 8 -b ./riborf/corrected/corrected_hits.bam -o ./riborf/corrected/corrected_hits.str1.bw --filterRNAstrand reverse --normalizeUsing CPM --binSize 1
+bamCoverage -p 8 -b ./riborf/corrected/corrected_hits.bam -o ./riborf/corrected/corrected_hits.str2.bw --filterRNAstrand forward --normalizeUsing CPM --binSize 1
 
 

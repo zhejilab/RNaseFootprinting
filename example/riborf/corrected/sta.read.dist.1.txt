@@ -1,0 +1,2 @@
+fragment.length	read.num	frame1	frame2	frame3
+1	1818844	0.26683	0.12131	0.61186

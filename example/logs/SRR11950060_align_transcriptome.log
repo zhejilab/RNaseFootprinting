@@ -1,0 +1,33 @@
+
+[2023-01-11 16:10:31] Beginning TopHat run (v2.1.0)
+-----------------------------------------------
+[2023-01-11 16:10:31] Checking for Bowtie
+		  Bowtie version:	 2.2.6.0
+[2023-01-11 16:10:31] Checking for Bowtie index files (transcriptome)..
+[2023-01-11 16:10:31] Checking for Bowtie index files (genome)..
+[2023-01-11 16:10:31] Checking for reference FASTA file
+[2023-01-11 16:10:31] Generating SAM header for ./annotation/genome/genome
+Warning: found a read < 20bp in ./align_rRNA/unmapped.fastq
+[2023-01-11 16:10:37] Reading known junctions from GTF file
+[2023-01-11 16:11:05] Preparing reads
+	 left reads: min. length=18, max. length=35, 9856560 kept reads (170 discarded)
+Warning: short reads (<20bp) will make TopHat quite slow and take large amount of memory because they are likely to be mapped in too many places
+[2023-01-11 16:12:13] Using pre-built transcriptome data..
+[2023-01-11 16:12:19] Mapping left_kept_reads to transcriptome known with Bowtie2 
+[2023-01-11 16:19:17] Resuming TopHat pipeline with unmapped reads
+Warning: you have only one segment per read.
+	If the read length is greater than or equal to 45bp,
+	we strongly recommend that you decrease --segment-length to about half the read length because TopHat will work better with multiple segments
+[2023-01-11 16:19:18] Mapping left_kept_reads.m2g_um to genome genome with Bowtie2 
+[2023-01-11 16:20:17] Searching for junctions via segment mapping
+	Coverage-search algorithm is turned on, making this step very slow
+	Please try running TopHat again with the option (--no-coverage-search) if this step takes too much time or memory.
+[2023-01-11 16:28:05] Retrieving sequences for splices
+[2023-01-11 16:34:59] Indexing splices
+Building a SMALL index
+[2023-01-11 16:35:26] Mapping left_kept_reads.m2g_um_unmapped to genome segment_juncs with Bowtie2 (1/1)
+[2023-01-11 16:35:57] Joining segment hits
+[2023-01-11 16:43:20] Reporting output tracks
+-----------------------------------------------
+[2023-01-11 16:58:32] A summary of the alignment counts can be found in ./align_transcriptome//align_summary.txt
+[2023-01-11 16:58:32] Run complete: 00:48:00 elapsed

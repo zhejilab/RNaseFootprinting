@@ -1,0 +1,6 @@
+A <- read.table ("./riborf/readdist/sta.read.dist.18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,.txt", sep="\t", header=T)
+pdf (file="./riborf/readdist/sta.readDist.plot.18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,.pdf")
+barplot(A[,2], names.arg = A[,1], beside=T, ylab="Read number")
+barplot(as.matrix(t(A[,3:5])), names.arg = A[,1], beside=T, ylim=c(0,1), legend=T)
+abline(h=0.5, lty="dotted")
+dev.off()
