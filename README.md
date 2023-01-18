@@ -29,7 +29,7 @@ Prior to running the example script below, these reference files should be place
 - `genome.GRCh38.fa` = FASTA file containing genomic sequences split by chromosome from UCSC (downloaded during analysis)
 - `gencode.v42.gtf` = GTF file containing genomic annotation from GENCODE (downloaded during analysis)
 - `refseq.genePred` = GenePred file containing genomic annotation from RefSeq (downloaded during analysis)
-- `rRNA.fa` = FASTA file containing rRNA sequences (available at XX)
+- `rRNA.fa` = FASTA file containing rRNA sequences (available in `example/annotation/` directory)
 
 
 ### Example analysis for sample SRR11950060
