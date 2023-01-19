@@ -198,7 +198,7 @@ htseq-count \
 
 ##### Step 10: Correct the location of reads based on their read length and the provided offset parameters
 
-The offset parameters will need to be manually curated beefore this step. This will assign the read mapping locations to ribosomal A-sites, correcting for the offset distance between the 5' end of reads and ribosomal A-sites. These correction parameters are inferred from the RibORF readDist plots. Details are described in a [previously published protocol](https://currentprotocols.onlinelibrary.wiley.com/doi/full/10.1002/cpmb.67). Users can load corrected reads (BigWig files) to IGV. The translated ORFs show 3-nt periodicity. And the non-ribosomal footprints show a localized distribution without periodicity.
+The offset parameters will need to be manually curated beefore this step. This will assign the read mapping locations to ribosomal A-sites, correcting for the offset distance between the 5' end of reads and ribosomal A-sites. These correction parameters are inferred from the RibORF readDist plots. Here we only included fragment sizes showing >60% of reads assigned to the 1st nucleotides of codons, including 21 nt, 27 nt, 28 nt, and 29 nt. Details are described in a [previously published protocol](https://currentprotocols.onlinelibrary.wiley.com/doi/full/10.1002/cpmb.67). Users can load corrected reads (BigWig files) to IGV. The translated ORFs show 3-nt periodicity. And the non-ribosomal footprints show a localized distribution without periodicity.
 
 Correct for read-ribosomal offset distances:
 
